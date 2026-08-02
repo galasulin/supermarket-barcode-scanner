@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="720" viewBox="0 0 390 720" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <clipPath id="r"><rect x="0" y="0" width="390" height="720" rx="26"/></clipPath>
+  </defs>
+  <g clip-path="url(#r)">
+    <rect width="390" height="720" fill="#F7F6F2"/>
+
+    <!-- header -->
+    <rect x="0" y="0" width="390" height="150" fill="#1F7A4D"/>
+    <text x="374" y="36" text-anchor="end" fill="#ffffff" font-size="17" font-weight="700" direction="rtl">סריקת ברקודים כל החנות</text>
+    <text x="374" y="72" text-anchor="end" fill="#DCEFE4" font-size="13" direction="rtl">סה"כ נסרקו: 128</text>
+    <text x="248" y="72" text-anchor="end" fill="#DCEFE4" font-size="13" direction="rtl">מזוהים: 121</text>
+    <text x="120" y="72" text-anchor="end" fill="#DCEFE4" font-size="13" direction="rtl">לא מזוהים: 7</text>
+    <text x="374" y="104" text-anchor="end" fill="#9FE1CB" font-size="13" direction="rtl">מסונכרן ✓</text>
+
+    <!-- scan box -->
+    <rect x="16" y="166" width="230" height="52" rx="12" fill="#ffffff" stroke="#2F8F5B" stroke-width="2"/>
+    <text x="30" y="198" fill="#B7BDB4" font-size="15">scan or type barcode…</text>
+    <rect x="254" y="166" width="58" height="52" rx="12" fill="#EAF1FB"/>
+    <text x="283" y="200" text-anchor="middle" font-size="20">📷</text>
+    <rect x="320" y="166" width="54" height="52" rx="12" fill="#2F8F5B"/>
+    <text x="347" y="199" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="700" direction="rtl">הוסף</text>
+
+    <!-- feedback banner (identified) -->
+    <rect x="16" y="230" width="358" height="52" rx="10" fill="#E9F8EF" stroke="#BFE3CE"/>
+    <text x="366" y="253" text-anchor="end" fill="#1F7A4D" font-size="15" font-weight="700" direction="rtl">✓ במבה אסם 80 גרם</text>
+    <text x="366" y="271" text-anchor="end" fill="#6C9A80" font-size="12">7290004131074</text>
+
+    <!-- search -->
+    <rect x="16" y="298" width="358" height="44" rx="12" fill="#ffffff" stroke="#E7E3DB"/>
+    <text x="366" y="325" text-anchor="end" fill="#B7BDB4" font-size="14" direction="rtl">חיפוש ברשימה…</text>
+
+    <!-- rows -->
+    <!-- row 1 identified -->
+    <rect x="16" y="356" width="358" height="56" rx="12" fill="#ffffff" stroke="#BFE3CE"/>
+    <text x="366" y="381" text-anchor="end" fill="#1B2A20" font-size="15" font-weight="600" direction="rtl">במבה אסם 80 גרם</text>
+    <text x="366" y="399" text-anchor="end" fill="#8C948C" font-size="12">7290004131074</text>
+    <rect x="26" y="371" width="30" height="30" rx="8" fill="#FBEAEA"/>
+    <text x="41" y="392" text-anchor="middle" fill="#C0392B" font-size="15">✕</text>
+
+    <!-- row 2 identified -->
+    <rect x="16" y="420" width="358" height="56" rx="12" fill="#ffffff" stroke="#BFE3CE"/>
+    <text x="366" y="445" text-anchor="end" fill="#1B2A20" font-size="15" font-weight="600" direction="rtl">קוטג' תנובה 5% 250 גרם</text>
+    <text x="366" y="463" text-anchor="end" fill="#8C948C" font-size="12">7290000208503</text>
+    <rect x="26" y="435" width="30" height="30" rx="8" fill="#FBEAEA"/>
+    <text x="41" y="456" text-anchor="middle" fill="#C0392B" font-size="15">✕</text>
+
+    <!-- row 3 unknown -->
+    <rect x="16" y="484" width="358" height="56" rx="12" fill="#FFFCF4" stroke="#F3D79B"/>
+    <text x="366" y="509" text-anchor="end" fill="#9A6B00" font-size="15" font-weight="600" direction="rtl">לא מזוהה</text>
+    <text x="366" y="527" text-anchor="end" fill="#B79246" font-size="12">7296789012345</text>
+    <rect x="26" y="499" width="30" height="30" rx="8" fill="#FBEAEA"/>
+    <text x="41" y="520" text-anchor="middle" fill="#C0392B" font-size="15">✕</text>
+
+    <!-- row 4 identified -->
+    <rect x="16" y="548" width="358" height="56" rx="12" fill="#ffffff" stroke="#BFE3CE"/>
+    <text x="366" y="573" text-anchor="end" fill="#1B2A20" font-size="15" font-weight="600" direction="rtl">אבוקדו מוכן לאכילה 400 ג</text>
+    <text x="366" y="591" text-anchor="end" fill="#8C948C" font-size="12">7290018732021</text>
+    <rect x="26" y="563" width="30" height="30" rx="8" fill="#FBEAEA"/>
+    <text x="41" y="584" text-anchor="middle" fill="#C0392B" font-size="15">✕</text>
+
+    <!-- footer -->
+    <rect x="0" y="648" width="390" height="72" fill="#ffffff" stroke="#E7E3DB"/>
+    <rect x="16" y="666" width="220" height="46" rx="12" fill="#2F8F5B"/>
+    <text x="126" y="695" text-anchor="middle" fill="#ffffff" font-size="15" font-weight="700" direction="rtl">ייצוא CSV ⬇</text>
+    <rect x="246" y="666" width="128" height="46" rx="12" fill="#ffffff" stroke="#E7E3DB"/>
+    <text x="310" y="695" text-anchor="middle" fill="#1B2A20" font-size="15" direction="rtl">ייבוא ⤴</text>
+  </g>
+</svg>
