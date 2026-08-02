@@ -21,6 +21,21 @@ attach a barcode was hopeless. The goal:
 > then automatically map what was scanned to real product data and find what's
 > missing from the site.
 
+## Preview
+
+<p align="center">
+  <img src="screenshots/app-preview.svg" width="330" alt="Scanner main screen: live product identification and a synced list" />
+</p>
+
+The three states you see while scanning — recognised, unrecognised, and duplicate:
+
+<p align="center">
+  <img src="screenshots/states.svg" width="440" alt="Scan feedback states: identified, not-identified, already-scanned" />
+</p>
+
+> UI previews rendered from the app's own markup. An unrecognised barcode is
+> still saved — it just carries no product name until it's matched later.
+
 ## How it works
 
 ```
