@@ -1,0 +1,8 @@
+# real product data / generated lookup (third-party data, large) — never commit
+app/ramilevy-lookup.json
+*.local.*
+# scraped catalogs
+**/products.json
+# OS
+.DS_Store
+Thumbs.db

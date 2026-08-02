@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>סריקת ברקודים - סופר זול אסולין</title>
+<style>
+  :root{--g:#2F8F5B;--gd:#1F7A4D;--ink:#1B2A20;--mut:#8C948C;--line:#E7E3DB;--bg:#F7F6F2}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:150px}
+  header{position:sticky;top:0;z-index:5;background:var(--gd);color:#fff;padding:12px 14px}
+  header h1{margin:0;font-size:17px;font-weight:700}
+  .stat{margin-top:8px;font-size:13px;display:flex;gap:14px;flex-wrap:wrap}
+  .stat b{font-size:16px}
+  .sync{margin-top:6px;font-size:13px;color:#9FE1CB}
+  .scanbox{padding:12px 14px;position:sticky;top:96px;background:var(--bg);z-index:4;border-bottom:1px solid var(--line)}
+  .in{display:flex;gap:8px}
+  .in input{flex:1;height:52px;border:2px solid var(--g);border-radius:12px;padding:0 14px;font-size:18px;direction:ltr;text-align:left;background:#fff}
+  .btn{height:52px;border:0;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;padding:0 16px}
+  .btn-g{background:var(--g);color:#fff}
+  .btn-cam{background:#EAF1FB;color:#1F4E84;width:58px;font-size:22px}
+  .btn-out{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  #reader{margin-top:10px;border-radius:12px;overflow:hidden}
+  .fb{margin-top:10px;border-radius:10px;padding:10px 12px;font-size:15px;font-weight:600;display:none}
+  .fb.ok{display:block;background:#E9F8EF;color:#1F7A4D;border:1px solid #BFE3CE}
+  .fb.unknown{display:block;background:#FFF4E0;color:#9A6B00;border:1px solid #F3D79B}
+  .fb.dup{display:block;background:#EAF1FB;color:#1F4E84;border:1px solid #C3D8F2}
+  .search{padding:10px 14px}
+  .search input{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:16px;background:#fff}
+  .list{padding:0 14px}
+  .row{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .row.ok{border-color:#BFE3CE}
+  .row.unknown{border-color:#F3D79B;background:#FFFCF4}
+  .row .nm{flex:1;min-width:0}
+  .row .nm b{font-size:15px;font-weight:600;display:block;line-height:1.35}
+  .row .nm s{font-size:12px;color:var(--mut);text-decoration:none;direction:ltr}
+  .row .del{border:0;background:#FBEAEA;color:#C0392B;border-radius:8px;width:34px;height:34px;font-size:16px;flex:none;cursor:pointer}
+  .foot{position:fixed;bottom:0;left:0;right:0;display:flex;gap:8px;padding:10px 14px;background:#fff;border-top:1px solid var(--line);z-index:8}
+  .foot .btn{flex:1;height:46px;font-size:15px}
+  .hide{display:none!important}
+  .empty{text-align:center;color:var(--mut);padding:30px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#128278; &#1505;&#1512;&#1497;&#1511;&#1514; &#1489;&#1512;&#1511;&#1493;&#1491;&#1497;&#1501; &#1499;&#1500; &#1492;&#1495;&#1504;&#1493;&#1514;</h1>
+  <div class="stat">
+    <span>&#1505;&#1492;&#1499; &#1504;&#1505;&#1512;&#1511;&#1493;: <b id="cAll">0</b></span>
+    <span>&#10004; &#1502;&#1494;&#1493;&#1492;&#1497;&#1501;: <b id="cOk">0</b></span>
+    <span>&#10067; &#1500;&#1488; &#1502;&#1494;&#1493;&#1492;&#1497;&#1501;: <b id="cUn">0</b></span>
+  </div>
+  <div class="sync" id="sync">&#9729;&#65038; &#1502;&#1514;&#1495;&#1489;&#1512;&#8230;</div>
+</header>
+
+<div class="scanbox">
+  <div class="in">
+    <input id="bc" placeholder="&#1505;&#1512;&#1493;&#1511; &#1488;&#1493; &#1492;&#1511;&#1500;&#1491; &#1489;&#1512;&#1511;&#1493;&#1491;..." inputmode="numeric" autocomplete="off">
+    <button class="btn btn-cam" id="camBtn">&#128247;</button>
+    <button class="btn btn-g" id="addBtn">&#1492;&#1493;&#1505;&#1507;</button>
+  </div>
+  <div id="reader" class="hide"></div>
+  <div class="fb" id="fb"></div>
+</div>
+
+<div class="search"><input id="q" placeholder="&#128269; &#1495;&#1497;&#1508;&#1493;&#1513; &#1489;&#1512;&#1513;&#1497;&#1502;&#1492; (&#1489;&#1512;&#1511;&#1493;&#1491; &#1488;&#1493; &#1513;&#1501;)..." autocomplete="off"></div>
+<div class="list" id="list"></div>
+
+<div class="foot">
+  <button class="btn btn-g" id="exportBtn">&#11015;&#65039; &#1497;&#1497;&#1510;&#1493;&#1488; CSV</button>
+  <button class="btn btn-out" id="importBtn">&#10548;&#65039; &#1497;&#1497;&#1489;&#1493;&#1488;</button>
+  <input type="file" id="importInput" accept=".csv,text/csv" class="hide">
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+var API='/wp-json/sa/v1/list', LIST='scanned', TOKEN='CHANGE_ME_TOKEN';
+var LKEY='sa_scanned_v1', LOOKKEY='sa_lookup_v1';
+var scanned = JSON.parse(localStorage.getItem(LKEY)||'{}');
+var lookup  = JSON.parse(localStorage.getItem(LOOKKEY)||'null');
+var html5=null, scanning=false, pushTimer=null, polling=false;
+var $=function(s){return document.querySelector(s);};
+var bc=$('#bc'), list=$('#list'), q=$('#q'), fb=$('#fb');
+
+function nameFor(b){ return (lookup && lookup[b]) ? lookup[b] : null; }
+
+function stats(){
+  var keys=Object.keys(scanned), ok=0;
+  for(var i=0;i<keys.length;i++){ if(nameFor(keys[i])) ok++; }
+  $('#cAll').textContent=keys.length;
+  $('#cOk').textContent=ok;
+  $('#cUn').textContent=keys.length-ok;
+}
+function rowHtml(b){
+  var nm=nameFor(b), cls=nm?'ok':'unknown';
+  var label=nm?('<b>'+nm+'</b><s>'+b+'</s>'):('<b>&#10067; &#1500;&#1488; &#1502;&#1494;&#1493;&#1492;&#1492;</b><s>'+b+'</s>');
+  return '<div class="row '+cls+'"><div class="nm">'+label+'</div>'+
+    '<button class="del" data-b="'+b+'">&#10005;</button></div>';
+}
+function render(){
+  var term=q.value.trim();
+  var keys=Object.keys(scanned).reverse();
+  if(term){ keys=keys.filter(function(b){ var nm=nameFor(b)||''; return b.indexOf(term)>-1 || nm.indexOf(term)>-1; }); }
+  if(!keys.length){ list.innerHTML='<div class="empty">'+(term?'לא נמצא':'עדין לא נסרק כלום. סרוק מוצר כדי להתחיל.')+'</div>'; stats(); return; }
+  list.innerHTML=keys.slice(0,300).map(rowHtml).join('');
+  stats();
+}
+list.addEventListener('click',function(e){
+  var b=e.target.closest('.del'); if(!b) return;
+  var code=b.getAttribute('data-b');
+  if(scanned[code]!==undefined){ delete scanned[code]; persist(); render(); }
+});
+function showFb(kind,b,nm){
+  fb.className='fb '+kind;
+  if(kind==='ok') fb.innerHTML='&#10004; '+nm+'<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
+  else if(kind==='unknown') fb.innerHTML='&#10067; &#1500;&#1488; &#1502;&#1494;&#1493;&#1492; - &#1504;&#1493;&#1505;&#1507; &#1500;&#1512;&#1513;&#1497;&#1502;&#1492; &#1500;&#1489;&#1491;&#1497;&#1511;&#1492;<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
+  else fb.innerHTML='&#8505;&#65039; &#1499;&#1489;&#1512; &#1504;&#1505;&#1512;&#1511; &#1511;&#1493;&#1491;&#1501;<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
+}
+function persist(){ localStorage.setItem(LKEY, JSON.stringify(scanned)); stats(); cloudPushDebounced(); }
+function addScan(v){
+  v=(v||'').replace(/\s+/g,'').trim(); if(!v) return;
+  if(scanned[v]){ showFb('dup',v); if(navigator.vibrate)navigator.vibrate([25,40,25]); return; }
+  scanned[v]=1; persist();
+  var nm=nameFor(v);
+  showFb(nm?'ok':'unknown', v, nm);
+  if(navigator.vibrate) navigator.vibrate(60);
+  render();
+}
+$('#addBtn').onclick=function(){ addScan(bc.value); bc.value=''; bc.focus(); };
+bc.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); addScan(bc.value); bc.value=''; } });
+q.addEventListener('input',render);
+
+/* מצלמה */
+$('#camBtn').onclick=function(){ scanning?stopCam():startCam(); };
+function startCam(){
+  if(typeof Html5Qrcode==='undefined'){ alert('המצלמה דורשת אינטרנט.'); return; }
+  $('#reader').classList.remove('hide'); scanning=true;
+  html5=new Html5Qrcode('reader');
+  html5.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:140}},
+    function(txt){ addScan(txt); }, function(){}).catch(function(){ alert('לא ניתן לפתוח מצלמה'); scanning=false; });
+}
+function stopCam(){ if(html5&&scanning){ html5.stop().then(function(){html5.clear();}).catch(function(){}); } scanning=false; $('#reader').classList.add('hide'); }
+
+/* טעינת מסד הזיהוי של רמי לוי (פעם אחת, נשמר במטמון) */
+function loadLookup(){
+  if(lookup){ return; }
+  fetch('ramilevy-lookup.json').then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(m){ lookup=m; try{ localStorage.setItem(LOOKKEY, JSON.stringify(m)); }catch(e){} render(); })
+    .catch(function(){ lookup=lookup||{}; });
+}
+
+/* סנכרון ענן (WordPress REST) */
+function setStatus(t,ok){ var el=$('#sync'); if(el){ el.textContent=t; el.style.color=ok?'#9FE1CB':'#FFE0A6'; } }
+function merge(remote){ var ch=false; for(var k in remote){ if(scanned[k]===undefined){ scanned[k]=1; ch=true; } } return ch; }
+function cloudPush(){
+  setStatus('☁︎ שומר…',true);
+  return fetch(API+'?list='+LIST+'&t='+TOKEN,{method:'POST',headers:{'Content-Type':'application/json','X-SA-Token':TOKEN},body:JSON.stringify(scanned)})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(m){ if(merge(m||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); } setStatus('☁︎ מסונכרן ✓',true); })
+    .catch(function(){ setStatus('⚠ לא מחובר - נשמר מקומית',false); });
+}
+function cloudPushDebounced(){ clearTimeout(pushTimer); pushTimer=setTimeout(cloudPush,500); }
+function cloudPull(){
+  return fetch(API+'?list='+LIST,{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(remote){ if(merge(remote||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); } setStatus('☁︎ מסונכרן ✓',true); return true; })
+    .catch(function(){ setStatus('⚠ לא מחובר - נשמר מקומית',false); return false; });
+}
+function poll(){ if(polling) return; polling=true; cloudPull().then(function(){ polling=false; }); }
+setInterval(poll,5000);
+
+/* ייצוא */
+$('#exportBtn').onclick=function(){
+  var keys=Object.keys(scanned);
+  if(!keys.length){ alert('עדין לא נסרק כלום.'); return; }
+  var rows=[['barcode','name','status']];
+  keys.forEach(function(b){ var nm=nameFor(b); rows.push([b, nm||'', nm?'מזוהה':'לא מזוהה']); });
+  var csv='﻿'+rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='scanned-barcodes.csv'; a.click();
+};
+
+/* ייבוא (שחזור ברקודים מקובץ CSV ישן - לוקח כל מספר שנראה כמו ברקוד) */
+$('#importBtn').onclick=function(){ $('#importInput').click(); };
+$('#importInput').onchange=function(e){
+  var f=e.target.files[0]; if(!f) return; var rd=new FileReader();
+  rd.onload=function(){
+    var txt=String(rd.result), added=0;
+    var m=txt.match(/\d{6,}/g)||[];
+    m.forEach(function(code){ if(scanned[code]===undefined){ scanned[code]=1; added++; } });
+    localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); cloudPush();
+    alert('יובאו '+added+' ברקודים.'); e.target.value='';
+  };
+  rd.readAsText(f);
+};
+
+/* אתחול */
+loadLookup();
+render();
+cloudPull().then(function(){ if(Object.keys(scanned).length) cloudPush(); });
+bc.focus();
+</script>
+</body>
+</html>
