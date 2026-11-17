@@ -75,8 +75,11 @@ The scanner identifies each barcode **live** against a product lookup and saves 
 | **Shared list** | One list across unlimited devices, live-synced through the site's own WordPress |
 | **De-duplication** | Automatic "already scanned" feedback, with a distinct vibration pattern |
 | **Offline tolerance** | Scans are kept in a local cache and uploaded automatically when the connection returns |
+| **Reliable upload** | Only barcodes the server has not confirmed are sent, 150 per request, to stay under the host WAF's ~9 KB body limit; failed batches retry on every poll |
+| **Honest status** | "Synced" appears only when nothing is waiting; otherwise the header shows how many scans are still on the phone only |
+| **Camera accuracy** | EAN/UPC only, GTIN checksum check, 3 identical frames before accepting, camera closes after one scan |
 | **Counters & search** | Header counters for total / identified / not identified; search the list by barcode or name |
-| **Export / import** | CSV export of everything scanned (barcode, name, status); CSV import that recovers barcodes from an older file |
+| **Export / import** | CSV export of everything scanned (barcode, name, status), Excel-safe so barcodes stay text; CSV import that recovers barcodes from an older file |
 | **Safety** | Writes need a token; every normal write is an additive union; a destructive replace needs a separate admin key that lives only on the server |
 | **Cost** | No third-party service, no accounts, no monthly fee |
 
@@ -86,7 +89,7 @@ The scanner identifies each barcode **live** against a product lookup and saves 
 
 ![Architecture](docs/showcase/architecture.png)
 
-The front-end is a single static `index.html` served from a `/scan/` folder on the site. It keeps the scanned set in `localStorage` as an offline cache and loads a slim `barcode → name` map (`ramilevy-lookup.json`, built by `scripts/build_lookup.py` from a scraped catalog) once, caching it locally. Every change pushes the device's full set to a REST route registered by a small WordPress plugin, which merges it into one `wp_options` row and returns the merged set; every 5 seconds each device pulls and merges the server set. Because the page and the route share an origin, no CORS is needed, and because nothing is written to disk, the host's WAF (Wordfence/Imperva) does not flag it as a web shell. Design notes and the WAF story are in [docs/architecture.md](docs/architecture.md).
+The front-end is a single static `index.html` served from a `/scan/` folder on the site. It keeps the scanned set in `localStorage` as an offline cache and loads a slim `barcode → name` map (`ramilevy-lookup.json`, built by `scripts/build_lookup.py` from a scraped catalog) once, caching it locally. Every change pushes the barcodes the server has not confirmed yet, in batches of 150, to a REST route registered by a small WordPress plugin, which merges them into one `wp_options` row and returns the merged set; every 5 seconds each device pulls and merges the server set and retries anything still pending. Because the page and the route share an origin, no CORS is needed, and because nothing is written to disk, the host's WAF (Wordfence/Imperva) does not flag it as a web shell. Design notes and the WAF story are in [docs/architecture.md](docs/architecture.md).
 
 ### Flow
 
@@ -98,7 +101,7 @@ sequenceDiagram
     participant O as wp_options row
     P->>P: Scan barcode, look up name in cached map
     P->>L: Save set (offline cache)
-    P->>W: POST full local set (debounced 500 ms, token)
+    P->>W: POST unconfirmed barcodes, 150 per batch (debounced 500 ms, token)
     W->>O: Additive union with stored set
     W-->>P: Merged set
     P->>L: Merge new barcodes from other devices
@@ -114,18 +117,18 @@ sequenceDiagram
 
 | Parameter | Value |
 |---|---|
-| Front-end | One static file, `app/index.html`: 11.6 KB, 204 lines, inline CSS + vanilla JS, `lang="he" dir="rtl"` |
-| Camera decoding | `html5-qrcode` 2.3.8 (jsDelivr) · rear camera (`facingMode: environment`) · 10 fps · 250×140 px scan box |
+| Front-end | One static file, `app/index.html`: 15.2 KB, 257 lines, inline CSS + vanilla JS, `lang="he" dir="rtl"` |
+| Camera decoding | `html5-qrcode` 2.3.8 (jsDelivr) · rear camera (`facingMode: environment`) · 12 fps · 280×150 px scan box · EAN-13/EAN-8/UPC-A/UPC-E only · GTIN checksum + 3 identical reads |
 | Other input | USB/Bluetooth keyboard-wedge scanner or manual entry (Enter submits) |
-| Sync | Push: `POST` of the full local set, debounced 500 ms · Pull: `GET` every 5 s · On load: pull, then push |
+| Sync | Push: `POST` of unconfirmed barcodes only, 150 per request, debounced 500 ms · Pull: `GET` every 5 s, which also retries pending pushes · On load: pull |
 | REST route | `GET` / `POST` / `PUT` `/wp-json/sa/v1/list` |
 | Write auth | Token in `?t=` or `X-SA-Token` header; replace mode requires `?mode=replace&admin=<key>` |
 | Error responses | `403` forbidden (token) · `400` bad JSON · `403` admin key required |
 | Server storage | One `wp_options` row per list, `sa_bc_<list>` (default `scanned`, name limited to `a-z0-9`), `autoload=false`; no disk writes |
-| Client storage | `localStorage`: scanned set + cached lookup map |
+| Client storage | `localStorage`: scanned set + server-confirmed set + cached lookup map |
 | Lookup filter | Only numeric barcodes with ≥ 8 digits are kept; compact JSON output (a few hundred KB) |
 | List rendering | Newest 300 rows rendered; search across barcode and name |
-| CSV export | UTF-8 with BOM · columns `barcode,name,status` · `scanned-barcodes.csv` |
+| CSV export | UTF-8 with BOM · columns `barcode,name,status` · barcode written as `="…"` so Excel keeps it as text · `scanned-barcodes.csv` |
 | CSV import | Extracts every run of ≥ 6 digits from the file |
 | Haptics | `navigator.vibrate`: 60 ms on a new scan, a short pattern on a duplicate |
 | WordPress plugin | `sa-barcodes.php`, 60 lines, v1.0 |
@@ -140,6 +143,8 @@ sequenceDiagram
 - **Store the set in `wp_options`, never on disk** → nothing for the malware scanner to flag, and same-origin with `/scan/`, so no CORS → the whole list lives in one option row.
 - **Additive union on every write** → two phones scanning different aisles never overwrite each other, and a dropped write self-heals on the next scan → removing a barcode needs the admin replace path; a local delete comes back on the next sync.
 - **Server is the source of truth, `localStorage` is only an offline cache** → a fresh device both receives and contributes on load → a new device needs one successful pull to see the full list.
+- **Send small deltas, not the whole list** → the host's Imperva WAF rejects request bodies over ~9 KB, so pushing the full set silently stopped working past ~500 scans while the read-only poll still showed "synced"; in the real store one phone held 1,878 scans and most never reached the server → each phone has to remember which barcodes the server confirmed.
+- **Never call it "synced" from a read alone** → the status only turns green when nothing is pending → a phone that cannot write shows a warning with a count instead of a reassuring checkmark.
 - **Polling every 5 s instead of a push channel** → plain HTTP that the WAF already trusts, no extra infrastructure → other devices' scans appear with up to ~5 s delay.
 - **No third-party backend** → kvdb.io needed a paid plan / email verification for writes, jsonblob.com sends no CORS headers, an external host meant another account; the owner preferred everything on their own server.
 

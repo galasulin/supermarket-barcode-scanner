@@ -21,7 +21,7 @@
   .btn-cam{background:#EAF1FB;color:#1F4E84;width:58px;font-size:22px}
   .btn-out{background:#fff;border:1px solid var(--line);color:var(--ink)}
   #reader{margin-top:10px;border-radius:12px;overflow:hidden}
-  .fb{margin-top:10px;border-radius:10px;padding:10px 12px;font-size:15px;font-weight:600;display:none}
+  .fb{margin-top:10px;border-radius:12px;padding:14px;font-size:17px;font-weight:700;display:none;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.10)}
   .fb.ok{display:block;background:#E9F8EF;color:#1F7A4D;border:1px solid #BFE3CE}
   .fb.unknown{display:block;background:#FFF4E0;color:#9A6B00;border:1px solid #F3D79B}
   .fb.dup{display:block;background:#EAF1FB;color:#1F4E84;border:1px solid #C3D8F2}
@@ -74,10 +74,12 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 var API='/wp-json/sa/v1/list', LIST='scanned', TOKEN='CHANGE_ME_TOKEN';
-var LKEY='sa_scanned_v1', LOOKKEY='sa_lookup_v1';
+var LKEY='sa_scanned_v2', LOOKKEY='sa_lookup_v2';
 var scanned = JSON.parse(localStorage.getItem(LKEY)||'{}');
 var lookup  = JSON.parse(localStorage.getItem(LOOKKEY)||'null');
-var html5=null, scanning=false, pushTimer=null, polling=false;
+var SKEY='sa_synced_v2';                                   // ברקודים שאושרו כשמורים בשרת
+var synced  = JSON.parse(localStorage.getItem(SKEY)||'{}');
+var html5=null, scanning=false, pushTimer=null, polling=false, camHandled=false, fbTimer=null;
 var $=function(s){return document.querySelector(s);};
 var bc=$('#bc'), list=$('#list'), q=$('#q'), fb=$('#fb');
 
@@ -110,10 +112,12 @@ list.addEventListener('click',function(e){
   if(scanned[code]!==undefined){ delete scanned[code]; persist(); render(); }
 });
 function showFb(kind,b,nm){
+  clearTimeout(fbTimer);
   fb.className='fb '+kind;
-  if(kind==='ok') fb.innerHTML='&#10004; '+nm+'<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
-  else if(kind==='unknown') fb.innerHTML='&#10067; &#1500;&#1488; &#1502;&#1494;&#1493;&#1492; - &#1504;&#1493;&#1505;&#1507; &#1500;&#1512;&#1513;&#1497;&#1502;&#1492; &#1500;&#1489;&#1491;&#1497;&#1511;&#1492;<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
-  else fb.innerHTML='&#8505;&#65039; &#1499;&#1489;&#1512; &#1504;&#1505;&#1512;&#1511; &#1511;&#1493;&#1491;&#1501;<br><small style="direction:ltr;font-weight:400">'+b+'</small>';
+  if(kind==='ok') fb.innerHTML='&#10004; &#1504;&#1505;&#1512;&#1511;: '+nm+'<br><small style="direction:ltr;font-weight:400;opacity:.85">'+b+'</small>';
+  else if(kind==='unknown') fb.innerHTML='&#10067; &#1500;&#1488; &#1502;&#1494;&#1493;&#1492; - &#1504;&#1513;&#1502;&#1512; &#1500;&#1512;&#1513;&#1497;&#1502;&#1492;<br><small style="direction:ltr;font-weight:400;opacity:.85">'+b+'</small>';
+  else fb.innerHTML='&#8505;&#65039; &#1499;&#1489;&#1512; &#1504;&#1505;&#1512;&#1511; &#1511;&#1493;&#1491;&#1501;<br><small style="direction:ltr;font-weight:400;opacity:.85">'+b+'</small>';
+  fbTimer=setTimeout(function(){ fb.className='fb'; }, 5000);
 }
 function persist(){ localStorage.setItem(LKEY, JSON.stringify(scanned)); stats(); cloudPushDebounced(); }
 function addScan(v){
@@ -129,16 +133,35 @@ $('#addBtn').onclick=function(){ addScan(bc.value); bc.value=''; bc.focus(); };
 bc.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); addScan(bc.value); bc.value=''; } });
 q.addEventListener('input',render);
 
-/* מצלמה */
+/* מצלמה - סריקה אחת מדויקת (אימות ספרת ביקורת + 2 קריאות זהות) */
+function gtinValid(code){
+  if(!/^(\d{8}|\d{12}|\d{13}|\d{14})$/.test(code)) return false;
+  var d=code.split('').map(Number), check=d.pop(), sum=0, mult=3;
+  for(var i=d.length-1;i>=0;i--){ sum+=d[i]*mult; mult=(mult===3?1:3); }
+  return ((10-(sum%10))%10)===check;
+}
+var camLast=null, camCount=0;
 $('#camBtn').onclick=function(){ scanning?stopCam():startCam(); };
 function startCam(){
   if(typeof Html5Qrcode==='undefined'){ alert('המצלמה דורשת אינטרנט.'); return; }
+  camHandled=false; camLast=null; camCount=0;
   $('#reader').classList.remove('hide'); scanning=true;
-  html5=new Html5Qrcode('reader');
-  html5.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:140}},
-    function(txt){ addScan(txt); }, function(){}).catch(function(){ alert('לא ניתן לפתוח מצלמה'); scanning=false; });
+  var fmts=null;
+  try{ if(typeof Html5QrcodeSupportedFormats!=='undefined'){ fmts=[Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E]; } }catch(e){}
+  html5 = fmts ? new Html5Qrcode('reader',{formatsToSupport:fmts,verbose:false}) : new Html5Qrcode('reader');
+  html5.start({facingMode:'environment'},{fps:12,qrbox:{width:280,height:150}},
+    function(txt){
+      if(camHandled) return;
+      var code=String(txt).replace(/\D/g,'');
+      if(!gtinValid(code)){ camLast=null; camCount=0; return; }   // דוחה קריאות שגויות
+      if(code===camLast){ camCount++; } else { camLast=code; camCount=1; }
+      if(camCount<3) return;                                       // דורש 3 קריאות זהות רצופות (דיוק מרבי)
+      camHandled=true;
+      stopCam();                                                   // סריקה אחת - סוגר מצלמה
+      addScan(code);
+    }, function(){}).catch(function(){ alert('לא ניתן לפתוח מצלמה'); scanning=false; $('#reader').classList.add('hide'); });
 }
-function stopCam(){ if(html5&&scanning){ html5.stop().then(function(){html5.clear();}).catch(function(){}); } scanning=false; $('#reader').classList.add('hide'); }
+function stopCam(){ if(html5&&scanning){ try{ html5.stop().then(function(){ try{html5.clear();}catch(e){} }).catch(function(){}); }catch(e){} } scanning=false; $('#reader').classList.add('hide'); }
 
 /* טעינת מסד הזיהוי של רמי לוי (פעם אחת, נשמר במטמון) */
 function loadLookup(){
@@ -148,22 +171,51 @@ function loadLookup(){
     .catch(function(){ lookup=lookup||{}; });
 }
 
-/* סנכרון ענן (WordPress REST) */
+/* סנכרון ענן (WordPress REST)
+   חומת האש של האחסון חוסמת בקשה מעל ~9KB, לכן שולחים רק ברקודים שעוד לא בשרת, במנות של 150.
+   הסטטוס אומר "מסונכרן" רק כשבאמת אין שום ברקוד שממתין לשליחה. */
+var BATCH=150, pushing=false;
 function setStatus(t,ok){ var el=$('#sync'); if(el){ el.textContent=t; el.style.color=ok?'#9FE1CB':'#FFE0A6'; } }
-function merge(remote){ var ch=false; for(var k in remote){ if(scanned[k]===undefined){ scanned[k]=1; ch=true; } } return ch; }
+function saveSynced(){ try{ localStorage.setItem(SKEY, JSON.stringify(synced)); }catch(e){} }
+function pendingKeys(){ return Object.keys(scanned).filter(function(k){ return !synced[k]; }); }
+function showSync(){
+  var p=pendingKeys().length;
+  if(p) setStatus('⚠ '+p+' ממתינים לשליחה - שמורים בטלפון',false);
+  else setStatus('☁︎ מסונכרן ✓ ('+Object.keys(scanned).length+')',true);
+}
+function merge(remote){
+  var ch=false;
+  for(var k in remote){ synced[k]=1; if(scanned[k]===undefined){ scanned[k]=1; ch=true; } }
+  saveSynced(); return ch;
+}
 function cloudPush(){
-  setStatus('☁︎ שומר…',true);
-  return fetch(API+'?list='+LIST+'&t='+TOKEN,{method:'POST',headers:{'Content-Type':'application/json','X-SA-Token':TOKEN},body:JSON.stringify(scanned)})
+  if(pushing) return Promise.resolve();
+  var keys=pendingKeys();
+  if(!keys.length){ showSync(); return Promise.resolve(); }
+  pushing=true; setStatus('☁︎ שומר… ('+keys.length+')',true);
+  var batch=keys.slice(0,BATCH), body={};
+  batch.forEach(function(k){ body[k]=1; });
+  return fetch(API+'?list='+LIST+'&t='+TOKEN,{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','X-SA-Token':TOKEN},body:JSON.stringify(body)})
     .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(m){ if(merge(m||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); } setStatus('☁︎ מסונכרן ✓',true); })
-    .catch(function(){ setStatus('⚠ לא מחובר - נשמר מקומית',false); });
+    .then(function(m){
+      batch.forEach(function(k){ synced[k]=1; });
+      if(merge(m||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); }
+      saveSynced(); pushing=false;
+      if(pendingKeys().length) return cloudPush();   // המנה הבאה
+      showSync();
+    })
+    .catch(function(){ pushing=false; var p=pendingKeys().length; setStatus('⚠ השליחה נכשלה - '+p+' ממתינים, ינסה שוב',false); });
 }
 function cloudPushDebounced(){ clearTimeout(pushTimer); pushTimer=setTimeout(cloudPush,500); }
 function cloudPull(){
-  return fetch(API+'?list='+LIST,{cache:'no-store'})
+  return fetch(API+'?list='+LIST+'&_='+Date.now(),{cache:'no-store'})
     .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(remote){ if(merge(remote||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); } setStatus('☁︎ מסונכרן ✓',true); return true; })
-    .catch(function(){ setStatus('⚠ לא מחובר - נשמר מקומית',false); return false; });
+    .then(function(remote){
+      if(merge(remote||{})){ localStorage.setItem(LKEY,JSON.stringify(scanned)); render(); }
+      if(pendingKeys().length) cloudPush(); else showSync();   // כל בדיקה גם משלימה שליחות שנכשלו
+      return true;
+    })
+    .catch(function(){ var p=pendingKeys().length; setStatus('⚠ אין חיבור לשרת'+(p?' - '+p+' ממתינים':''),false); return false; });
 }
 function poll(){ if(polling) return; polling=true; cloudPull().then(function(){ polling=false; }); }
 setInterval(poll,5000);
@@ -173,7 +225,8 @@ $('#exportBtn').onclick=function(){
   var keys=Object.keys(scanned);
   if(!keys.length){ alert('עדין לא נסרק כלום.'); return; }
   var rows=[['barcode','name','status']];
-  keys.forEach(function(b){ var nm=nameFor(b); rows.push([b, nm||'', nm?'מזוהה':'לא מזוהה']); });
+  // ="..." גורם לאקסל לשמור את הברקוד כטקסט (בלי 1.07E+12 ובלי למחוק אפסים בהתחלה)
+  keys.forEach(function(b){ var nm=nameFor(b); rows.push(['="'+b+'"', nm||'', nm?'מזוהה':'לא מזוהה']); });
   var csv='﻿'+rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
@@ -197,7 +250,7 @@ $('#importInput').onchange=function(e){
 /* אתחול */
 loadLookup();
 render();
-cloudPull().then(function(){ if(Object.keys(scanned).length) cloudPush(); });
+cloudPull();   // מושך מהשרת ומשלים אוטומטית כל מה שעוד לא נשלח
 bc.focus();
 </script>
 </body>
