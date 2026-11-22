@@ -35,7 +35,7 @@
 
 ## 📸 Screens
 
-Captured from the real `app/index.html`, run locally with every backend request answered by a stub. The product names and barcodes are invented; nothing was sent to a live site.
+Captured from the real `app/index.html`, run locally with every backend request answered by a stub. The product names and barcodes are invented; nothing was sent to a live site. The screens were captured on 28 Oct 2026, before the 17 Nov sync update: today the header shows a count next to "synced" (for example "מסונכרן ✓ (12)"), and without a connection it shows how many scans are still waiting to be sent.
 
 <table>
 <tr>
