@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git config user.name \"Gal Asulin\" && git config user.email \"44302269+galasulin@users.noreply.github.com\""
+          }
+        ]
+      }
+    ]
+  }
+}
